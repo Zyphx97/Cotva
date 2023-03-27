@@ -29,7 +29,7 @@ def gDmkr():
                                               btt1=lambda: methods.getfilepath(),  # Comando 1
                                               bttx1='Selecciona Manifiesto',  # Texto 1
                                               btt2=lambda: methods.GuideCreationLooper(),
-                                              bttx3='Crear Guìas')  # Texto 1
+                                              bttx2='Crear Guìas')  # Texto 1
     gDmkrk.grab_set()
 def rSnch():
     global filename, xvalue, yvalue, lbl1
@@ -41,7 +41,7 @@ def rSnch():
                                               yvalue = 33,
                                               btt1=lambda: methods.getfolderpath(),  # Comando 1
                                               bttx1='Seleccionar Carpeta',  # Texto 1
-                                              btt2=print('createplants'),  # Comando 2
+                                              btt2=lambda: methods.createplants(),  # Comando 2
                                               bttx2='Crear Plantillas',  # Texto 2
                                               btt3=lambda: methods.analiceplants(),  # Comando 3
                                               bttx3='Analizar Plantillas',

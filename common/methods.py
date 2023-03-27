@@ -1,3 +1,5 @@
+import win32com.client
+import xlwt
 import glob
 import math
 import os
@@ -27,12 +29,34 @@ def getfolderpath():
 def getfilepath():
     global filename
     filename = askopenfilename()
+def split_df_by_total(df, max_total=20000):
+    subgroups = []
+    current_total = 0
+    current_group = pandas.DataFrame(columns=df.columns)
 
+    for index, row in df.iterrows():
+        if current_total + row['CAP_VALOR'] > max_total:
+            if not current_group.empty:
+                # Add the top row to the current group
+                current_group = pandas.concat([df.head(1), current_group], ignore_index=True)
+                subgroups.append(current_group)
+            current_total = row['CAP_VALOR']
+            current_group = pandas.DataFrame(columns=df.columns)
+        else:
+            current_total += row['CAP_VALOR']
+        current_group = pandas.concat([current_group, pandas.DataFrame(row).T], ignore_index=True)
 
+    if not current_group.empty:
+        # Add the top row to the last group
+        current_group = pandas.concat([df.head(1), current_group], ignore_index=True)
+        subgroups.append(current_group)
+
+    return subgroups
 def analiceplants():
     # Get Inside Paths to work in
-    global foldername, label
-    pLantsfolder = foldername + '\PLANTILLAS'
+    global foldername, label, mnrsdfflt, t1inddf, myrsdf, pLantsfolder
+    pLantsfolder = foldername + '/PLANTILLAS/'
+    print(pLantsfolder)
     pRefolder = foldername + '\PRE'
     mAsterfile = foldername
     # Get dataframe path
@@ -57,15 +81,92 @@ def analiceplants():
     t1inddf = mfstdf[mfstdf['TOTAL DECLARE VALUE'] > 300]
     t1inddfflt = str(len(t1inddf.index))
     # Number of major guides
-    myrsdfflt = str(int(gddfnb) - int(mndfnb) - int(t1inddfflt))
-    # Number of Referencies
     myrsdf = mfstdf[(mfstdf['TOTAL DECLARE VALUE'] >= 50.01) & (mfstdf['TOTAL DECLARE VALUE'] <= 299.99)]
+    myrsdfflt = str(len(myrsdf.index))
     # Number of minor, major and t1 referencies
     rfrmn = math.ceil(float(pandas.DataFrame(mnrsdfflt).sum(numeric_only=True)['TOTAL DECLARE VALUE']) / 20000)
     rfrt1 = math.ceil(float(pandas.DataFrame(t1inddf).sum(numeric_only=True)['TOTAL DECLARE VALUE']) / 20000)
     rfrmy = math.ceil(float(pandas.DataFrame(myrsdf).sum(numeric_only=True)['TOTAL DECLARE VALUE']) / 20000)
     rfdfnb = rfrmn + rfrt1 + rfrmy
+    # DataFrame modification
+    mfstdf = mfstdf.drop(['MWB','bag code','Bag ID','CLIENT REF.NO',
+                      'Customer REF. NO','SHIPPER ADDRESS',
+                      'CITY NAME SHIPPER','CITY CODE SHIPPER',
+                      'COUNTRY NAME SHIPPER','COUNTRY CODE SHIPPER',
+                      'CONSIGNEE','CONSIGNEE ADDRESS',
+                      'ZIP CODE CONSIGNEE','CITY NAME CONSIGNEE',
+                      'TEL CONSIGNEE','CITY CODE CONSIGNEE',
+                      'COUNTRY NAME CONSIGNEE','COUNTRY CODE CONSIGNEE',
+                      'UNIT OF WEIGHT(kg)','CURRENCY(USD)','ID_PAQUETERIA ',
+                      'VUELO','FECHA','AEROLINEA','BULTOS'
+], axis=1) # Delete cols
+    new_cols = ['GATEWAY','REFERENCIA','GUIA','BULTOS','CAP_PAISORI',
+               'CAP_PAISVEN','CANTIDAD','CAP_PESO','CAP_VALOR',
+               'UNIDAD','CANTARI','UNITARI','CAP_DESCRIP','NOM004',
+               'NOM015','NOM019','NOM020','NOM024','NOM050','NOM003',
+               'NOM141','FRACCION','PREVIO','CASTLC','COMTLC','ADVAL',
+               'PORCIVA','TIPO_MON','TIP_MERC','USO','VALORACION',
+               'VINCULACION','UNIDAD_PESO','CAP_DESCRIPOri','Proveedor',
+               'Traducciones','Pre','Piezas','amazonBarCode','MARCA',
+               'MODELO','SERIE','OBSERVACIONEs','IDENTIFICADOR',
+               'COMPLEMENTO1','COMPLEMENTO2','COMPLEMENTO3','IDENTIFICADOR',
+               'COMPLEMENTO1','COMPLEMENTO2','COMPLEMENTO3'
+] # New cols dictoinary
+    new_cols_dict = {col: pandas.Series(dtype=float) for col in new_cols}
+    mfstdf = pandas.concat([mfstdf, pandas.DataFrame(new_cols_dict)], axis=1)
+    # Copy cols value to new cols after insert dictionary
+    mfstdf['GUIA'] = mfstdf['TRACKING NUMBER(AWB)']
+    mfstdf['Proveedor'] = mfstdf['SHIPPER']
+    mfstdf['CAP_PESO'] = mfstdf['WEIGHT']
+    mfstdf['CAP_VALOR'] = mfstdf['TOTAL DECLARE VALUE']
+    mfstdf['CAP_DESCRIP'] = mfstdf['PRODUCT DESCRIPTION']
+    mfstdf['CAP_DESCRIPOri'] = mfstdf['PRODUCT DESCRIPTION']
+    mfstdf['CANTIDAD'] = mfstdf['TOTAL QTY']
+    mfstdf['CANTARI'] = mfstdf['TOTAL QTY']
+    mfstdf['Piezas'] = mfstdf['TOTAL QTY']
+    mfstdf['BULTOS'] = mfstdf['TOTAL PACKAGES']
+    mfstdf = mfstdf.drop(['TRACKING NUMBER(AWB)','SHIPPER',
+                          'WEIGHT','TOTAL DECLARE VALUE',
+                          'PRODUCT DESCRIPTION','TOTAL QTY',
+                          'TOTAL PACKAGES'], axis=1)
+    # New data of plants
+    mfstdf['GATEWAY'] = 'MEX'
+    mfstdf['CAP_PAISORI'] = 'CHN'
+    mfstdf['CAP_PAISVEN'] = 'CHN'
+    mfstdf['UNIDAD'] = '6'
+    mfstdf['UNITARI'] = '6'
+    mfstdf['NOM004'] = 0
+    mfstdf['NOM015'] = 0
+    mfstdf['NOM019'] = 0
+    mfstdf['NOM020'] = 0
+    mfstdf['NOM024'] = 0
+    mfstdf['NOM050'] = 0
+    mfstdf['NOM003'] = 0
+    mfstdf['NOM141'] = 0
+    mfstdf['FRACCION'] = '9901000100'
+    mfstdf['ADVAL'] = 0
+    mfstdf['PORCIVA'] = 16
+    mfstdf['TIPO_MON'] = 'USD'
+    mfstdf['TIP_MERC'] = 'N'
+    mfstdf['USO'] = 'O'
+    mfstdf['VALORACION'] = '1'
+    mfstdf['VINCULACION'] = '0'
+    mfstdf['UNIDAD_PESO'] = '1'
+    mfstdf['Traducciones'] = '1'
+    mfstdf['Pre'] = '0'
 
+    # New split df filters Minors Guides
+    mnrsdfflt = mfstdf[mfstdf['CAP_VALOR'] < 50]
+    mndfnb = str(len(mnrsdfflt.index))
+    # New split df filters T1 Guides
+    t1inddf = mfstdf[mfstdf['CAP_VALOR'] > 300].copy()
+    t1inddf['PORCIVA'] = 19
+    t1inddfflt = str(len(t1inddf.index))
+    # New split df filters Major guides
+    myrsdf = mfstdf[(mfstdf['CAP_VALOR'] >= 50.01) & (mfstdf['CAP_VALOR'] <= 299.99)].copy()
+    myrsdf['PORCIVA'] = 19
+    myrsdfflt = str(len(myrsdf.index))
+    # Windows Dialog "Analisis of manifiesto"
     anlcpltwmb = windowsclasses.msgbxwd(ttle='Análisis de Manifiesto',
                                         height=400,
                                         width=300,
@@ -77,7 +178,6 @@ def analiceplants():
                                         mgbstr6='T1 Individual : ' + t1inddfflt,
                                         mgbstr7='Referencias : ' + str(rfdfnb))
     anlcpltwmb.grab_set()
-
 def GuideCreationLooper():
     global filename
     # Elección de Archivo Excel acorde al Layout
@@ -236,3 +336,50 @@ def GuideCreationLooper():
 
 
         img.save(finalfilepath + " " + str(i) +'.pdf')
+def createplants():
+    global filename
+    # loop through each dataframe and split by 'TOTAL DECLARE VALUE'
+    global mnrsdfflt, t1inddf, myrsdf, pLantsfolder
+    # Scientific notation fix
+    df_list = [mnrsdfflt, t1inddf, myrsdf]  # replace with your list of dataframes
+    for i, df in enumerate(df_list):
+        subgroups = split_df_by_total(df)
+        print(subgroups)
+        for j, subgroup in enumerate(subgroups):
+            # Create a new Workbook object
+            workbook = xlwt.Workbook()
+            # Add a new Worksheet object to the Workbook object
+            worksheet = workbook.add_sheet('Hoja1')
+            num_format = xlwt.easyxf(num_format_str='0')
+            # Write the header row to the worksheet
+            header_row = subgroup.columns
+            for col_index, col_data in enumerate(header_row):
+                worksheet.write(0, col_index, col_data)
+            # Iterate through the DataFrame and write each row to the worksheet
+            for row_index, row_data in subgroup.iloc[1:].iterrows():
+                for col_index, col_data in enumerate(row_data):
+                    # Check if the cell value is NaN and replace it with an empty string
+                    if pandas.isna(col_data):
+                        col_data = ''
+                    if col_index != 2:   # Apply the number format to cells in column C
+                        worksheet.write(row_index, col_index, col_data)
+                        worksheet.col(2).width = 15 * 256
+                    else:
+                        worksheet.write(row_index, col_index, col_data, num_format)
+            # Save the Workbook object to a file
+            filenames = f'df_{i + 1}_group_{j + 1}.xls'
+            workbook.save(pLantsfolder + filenames)
+            # Open Excel application
+            excel = win32com.client.Dispatch("Excel.Application")
+            # Open workbook
+            workbook = excel.Workbooks.Open(pLantsfolder + filenames)
+            # Get the custom document properties object
+            custom_properties = workbook.CustomDocumentProperties
+            # Set the value of custom property "CustomProperty1" to "CustomValue"
+            custom_properties.Add("WorkbookGuid", False, 4, "ae5c34e8-16ac-4df2-85b5-0286647fd3c3")
+            # Save and close workbook
+            workbook.Save()
+            workbook.Close()
+            # Quit Excel application
+            excel.Quit()
+
