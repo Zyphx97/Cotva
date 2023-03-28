@@ -23,13 +23,9 @@ getentryvalue1 = None
 
 def labelupdates():
     global lbl1
-
-
 def getfolderpath():
     global foldername
     foldername = askdirectory()
-
-
 def getfilepath():
     global filename
     filename = askopenfilename()
@@ -396,4 +392,3 @@ def createplants():
             workbook.Close()
             # Quit Excel application
             excel.Quit()
-

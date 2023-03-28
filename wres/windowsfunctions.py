@@ -74,4 +74,3 @@ def rFrnc(getentryvalue1):
     getthefuckout = rFrncwd.getentryvalue1
     print(getthefuckout)
     return getthefuckout
-

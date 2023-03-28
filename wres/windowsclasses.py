@@ -70,9 +70,6 @@ class SubWindowthreebbt(customtkinter.CTkToplevel):
             self.getentryvalue1 = selected_item + self.getentryvalue1
             print(self.getentryvalue1)
         self.destroy()
-
-
-
 class msgbxwd(customtkinter.CTkToplevel):
     def __init__(self, ttle,
                  height="",
