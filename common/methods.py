@@ -1,3 +1,5 @@
+import tkinter.messagebox
+
 import win32com.client
 import xlwt
 import glob
@@ -13,8 +15,10 @@ from string import ascii_letters
 from barcode import Code128
 from barcode.writer import ImageWriter
 from wres import windowsclasses
-
+from wres import windowsfunctions
 global lbl1, foldername, label, filename
+global getentryvalue1
+getentryvalue1 = None
 
 
 def labelupdates():
@@ -56,7 +60,6 @@ def analiceplants():
     # Get Inside Paths to work in
     global foldername, label, mnrsdfflt, t1inddf, myrsdf, pLantsfolder
     pLantsfolder = foldername + '/PLANTILLAS/'
-    print(pLantsfolder)
     pRefolder = foldername + '\PRE'
     mAsterfile = foldername
     # Get dataframe path
@@ -189,8 +192,6 @@ def GuideCreationLooper():
     if not os.path.exists(newpath):
         os.makedirs(newpath)
     finalfilepath = newpath + "\Guia"
-    print(filepath)
-    print(df)
 
     for i in range(0,taildf):
 
@@ -337,14 +338,26 @@ def GuideCreationLooper():
 
         img.save(finalfilepath + " " + str(i) +'.pdf')
 def createplants():
+    global mnrsdfflt
+    global t1inddf
+    global myrsdf
+    global pLantsfolder
+    global getthefuckout
     global filename
-    # loop through each dataframe and split by 'TOTAL DECLARE VALUE'
-    global mnrsdfflt, t1inddf, myrsdf, pLantsfolder
+    getthefuckout = windowsfunctions.rFrnc(getentryvalue1="")
+    print(getthefuckout)
+    rfrncclt = getthefuckout[:5]
+    print (rfrncclt)
+    rfrncnmb = int(getthefuckout[5:])
+    print (rfrncnmb)
     # Scientific notation fix
+    mnrsdfflt['REFERENCIA'] = getthefuckout
+    t1inddf['REFERENCIA'] = getthefuckout
+    myrsdf['REFERENCIA'] = getthefuckout
     df_list = [mnrsdfflt, t1inddf, myrsdf]  # replace with your list of dataframes
+    # loop through each dataframe and split by 'TOTAL DECLARE VALUE'
     for i, df in enumerate(df_list):
         subgroups = split_df_by_total(df)
-        print(subgroups)
         for j, subgroup in enumerate(subgroups):
             # Create a new Workbook object
             workbook = xlwt.Workbook()
@@ -367,7 +380,8 @@ def createplants():
                     else:
                         worksheet.write(row_index, col_index, col_data, num_format)
             # Save the Workbook object to a file
-            filenames = f'df_{i + 1}_group_{j + 1}.xls'
+            filenames = rfrncclt + str(rfrncnmb) + '.xls'
+            rfrncnmb = rfrncnmb + 1
             workbook.save(pLantsfolder + filenames)
             # Open Excel application
             excel = win32com.client.Dispatch("Excel.Application")

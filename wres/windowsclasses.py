@@ -1,24 +1,54 @@
+import tkinter
+
 from PIL import Image, ImageTk
 import customtkinter
 import windowsfunctions
-global xvalue, yvalue
+global xvalue, yvalue, getentryvalue1
 
 class SubWindowthreebbt(customtkinter.CTkToplevel):
-    global xvalue, yvalue, lbl1, label, sbwdmstnm
-
-    def __init__(self, ttle="", xvalue='', yvalue='', height="", width="", btt1="", btt2="", btt3="",
-                 bttx1="", bttx2="", bttx3="", lbl1=""):
+    global xvalue, yvalue, lbl1, label, sbwdmstnm,selected_value
+    def __init__(self, ttle="", xvalue='', yvalue='', height="", width="",
+                 btt1="", btt2="", btt3="",bttx1="", bttx2="", bttx3="",
+                 lbl1="",xentryvalue="",yentryvalue="",entrypl="",
+                 listbox="",ylistvalue="",xlistvalue="", xdestr="",ydestr="",getentryvalue=""):
+        self.getentryvalue1 = None
         super().__init__()
         self.title(str(ttle))
         self.resizable(width='false', height='false')
-
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
         x = (screen_width - width) / 2
         y = (screen_height - height) / 2
         # Set the position of the new window
         self.geometry("%dx%d+%d+%d" % (width, height, x, y))
+        def selitms(choice):
+            global selected_value
+            selected_value = optionmenu1.get()
+            selected_value = selected_value.replace('\n', ' ').replace(' ', '')
         # Use CTkButton instead of tkinter Button
+        if entrypl != "":
+            entry1 = customtkinter.CTkEntry(master=self,
+                                            placeholder_text='Numero de primer referencia',
+                                            width=80,
+                                            height=30)
+            entry1.place(x=xentryvalue,y=yentryvalue)
+            self.getentryvalue1 = entry1.get()
+        if listbox != "":
+            # Read the items from the file
+            with open('resources/clientes.txt', 'r') as f:
+                options = f.readlines()
+            # Create a Tkinter variable to store the items
+            optionmenu_values = [opt.strip() for opt in options]
+            print(optionmenu_values)
+            # Create a OptionMenu widget and add the items to it
+            optionmenu1 = customtkinter.CTkOptionMenu(master=self,values=optionmenu_values,command=selitms)
+            optionmenu1.place(x=xlistvalue,y=ylistvalue)
+            reference_button = customtkinter.CTkButton(master=self,
+                                                       text='Aceptar',
+                                                       command=lambda:SubWindowthreebbt.getdata(self=self,
+                                                                                                entry1=entry1,
+                                                                                                optionmenu1=optionmenu1))
+            reference_button.place(x=xdestr,y=ydestr)
         if btt1 != "":
             button = customtkinter.CTkButton(master=self, text=bttx1, command=btt1, height=40, width=120)
             button.place(x=15, y=25)
@@ -33,6 +63,16 @@ class SubWindowthreebbt(customtkinter.CTkToplevel):
         if lbl1 != "":
             label = customtkinter.CTkLabel(master=self, text=lbl1)
             label.place(x=xvalue, y=yvalue)
+    def getdata(self, entry1=None, optionmenu1=None):
+        self.getentryvalue1 = entry1.get()
+        selected_item = selected_value
+        if selected_item:
+            self.getentryvalue1 = selected_item + self.getentryvalue1
+            print(self.getentryvalue1)
+        self.destroy()
+
+
+
 class msgbxwd(customtkinter.CTkToplevel):
     def __init__(self, ttle,
                  height="",

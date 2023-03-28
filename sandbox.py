@@ -1,35 +1,21 @@
+import customtkinter
 
-import win32com.client
-import xlwt
 
-# Create a new Workbook object
-workbook = xlwt.Workbook()
+class App(customtkinter.CTk):
+    def __init__(self):
+        super().__init__()
+        self.geometry("600x500")
+        self.title("CTk example")
+        string = ["option 1", "option 2"]
+        optionmenu_var = customtkinter.StringVar(value="option 2")  # set initial value
+        combobox = customtkinter.CTkOptionMenu(master=self,
+                                               values=string,
+                                               command=optionmenu_callback,
+                                               variable=optionmenu_var)
+        combobox.pack(padx=20, pady=10)
 
-# Add a new Worksheet object to the Workbook object
-worksheet = workbook.add_sheet('Hoja1')
 
-# Write some data to the Worksheet object
-worksheet.write(0, 0, 'Hello')
-worksheet.write(0, 1, 'World!')
-
-# Save the Workbook object to a file
-workbook.save('example.xls')
-
-# Open Excel application
-excel = win32com.client.Dispatch("Excel.Application")
-
-# Open workbook
-workbook = excel.Workbooks.Open(r"C:\Users\PC-AMPM-04\PycharmProjects\Cotva\example.xls")
-
-# Get the custom document properties object
-custom_properties = workbook.CustomDocumentProperties
-
-# Set the value of custom property "CustomProperty1" to "CustomValue"
-custom_properties.Add("WorkbookGuid", False, 4, "ae5c34e8-16ac-4df2-85b5-0286647fd3c3")
-
-# Save and close workbook
-workbook.Save()
-workbook.Close()
-
-# Quit Excel application
-excel.Quit()
+def optionmenu_callback(choice):
+    print("optionmenu dropdown clicked:", choice)
+app = App()
+app.mainloop()
